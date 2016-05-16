@@ -66,10 +66,10 @@ similarity.cosine <- function(x, y, graph) {
 n <- 10
 
 # define the number of vertices in the graph
-num.vertices <- 100
+num.vertices <- 36682
 
 # set the number of edges each new vertex creates
-k <- 2
+k <- 5
 
 # create a given number of vertices
 vertex.ids <- 1:num.vertices
@@ -79,6 +79,7 @@ vertex.values <- runif(num.vertices)
 
 # compute the probabilities of selecting each position of the ranking
 probabilities <- 1 / 1:n / sum(1/1:n)
+#probabilities <- rep(1 / n, 10)
 
 # simulate vertices using a data frame for easy import into igraph
 vertex.df <- data.frame(vertex.ids, vertex.values)
@@ -94,11 +95,11 @@ ranking <- function(v, sim, g) {
   # apply the similarity() function between vertex v and all other vertices
   vertex.df$distances <- sapply(vertex.df$vertex.ids, sim, x = v, graph = g)
   
-  neighbours <- vertex.df %>%
+  suppressMessages(neighbours <- vertex.df %>%
     filter(distances > 0) %>%
     arrange(distances) %>%
-    top_n(n) %>%
-    select(vertex.ids)
+    top_n(n, distances) %>%
+    select(vertex.ids))
   
   
   # top_n() may return more values in the presence of ties, so in order to have
