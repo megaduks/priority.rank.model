@@ -30,7 +30,7 @@ similarity.degree <- function(x, y, graph) {
   if (x == y)
     result <- 0
   else
-    result <- igraph::degree(graph, y, mode = "in") + 1
+    result <- runif(1, 0, log(igraph::degree(graph, y) + 2))
   
   result
 }
@@ -62,11 +62,28 @@ similarity.cosine <- function(x, y, graph) {
   result
 }
 
+similarity.dissasortative <- function(x, y, graph) {
+  
+  # the function defines the similarity between vertices
+  # as the reciprocal of the distance between degrees
+  
+  if (x == y)
+    result <- 0
+  else
+    # result <- (abs(vertex.degrees[x] - vertex.degrees[y]) / max(vertex.degrees[x], vertex.degrees[y]))
+    result <- abs(vertex.degrees[x] - vertex.degrees[y])
+  
+  result
+}
+
 # define the length of the ranking
 n <- 10
 
 # define the number of vertices in the graph
 num.vertices <- 100
+
+# define if equal number of outgoing edges should be used
+use.equal.outdegree <- FALSE
 
 # set the number of edges each new vertex creates
 k <- 2
@@ -89,6 +106,12 @@ vertex.vectors <- numeric()
 for (i in vertex.ids)
   vertex.vectors[i] <- list(c(1,sample(x = 0:1, size = 9, replace = TRUE)))
 
+# create a vector of expected vertex degrees
+vertex.degrees <- numeric()
+
+for (i in vertex.ids)
+  vertex.degrees[i] <- sample(1:10, 1)
+
 ranking <- function(v, sim, g) {
   
   # apply the similarity() function between vertex v and all other vertices
@@ -107,7 +130,26 @@ ranking <- function(v, sim, g) {
   neighbours
 }
 
-generate_rank_graph <- function(similarity) {
+bin_ranking <- function(v, sim, b, nb, g) {
+  
+  # apply the similarity() function between vertex v and all other vertices
+  vertex.df$distances <- sapply(vertex.df$vertex.ids, sim, x = v, graph = g)
+  
+  lower_bound <- ((max(vertex.df$distances) - min(vertex.df$distances)) / nb) * (b - 1) + min(vertex.df$distances)
+  upper_bound <- ((max(vertex.df$distances) - min(vertex.df$distances)) / nb) * (b) + min(vertex.df$distances)
+  
+  neighbours <- vertex.df %>%
+    filter(distances >= lower_bound) %>%
+    filter(distances >= upper_bound) %>%
+    select(vertex.ids)
+  
+  neighbours
+}
+
+generate_rank_graph <- function(similarity, use_bin_ranking = FALSE) {
+  
+  # number of bins when binned ranking is used
+  num_bins = 10
   
   # create an empty directed graph with a given number of vertices
   g <- make_empty_graph(n = num.vertices, directed = TRUE)
@@ -115,12 +157,34 @@ generate_rank_graph <- function(similarity) {
   # loop over all vertices in the graph
   for (j in vertex.df$vertex.ids) {
   
-    # compute the ranking for a given vertex
-    vertex.neighbours <- ranking(vertex.df[j,1], similarity, g)
-  
-    # select a neighbouring vertex using model probabilities
-    friends <- sample(vertex.neighbours, k, replace = FALSE, prob = probabilities)
-  
+    if (use_bin_ranking == TRUE) {
+      
+        friends <- numeric()
+        
+        for (n in 1:k) {
+            # select the bin from which the target vertices 
+            bin <- sample(1:num_bins, 1, prob = probabilities)
+            vertex.neighbours <- bin_ranking(vertex.df[j,1], similarity, bin, num_bins, g)
+            
+            if (length(vertex.neighbours) > 0)
+              friend <- sample(vertex.neighbours$vertex.ids, 1)
+            else
+              friend <- sample(vertex.df$vertex.ids, 1)
+            
+            friends <- c(friends, friend)
+        }
+    }
+    else {
+        # compute the ranking for a given vertex
+        vertex.neighbours <- ranking(vertex.df[j,1], similarity, g)
+      
+        if (use.equal.outdegree == FALSE)
+          k <- vertex.degrees[j]
+        
+        # select a neighbouring vertex using model probabilities
+        friends <- sample(vertex.neighbours, k, replace = FALSE, prob = probabilities)
+    }
+    
     # add edges to selected vertices
     for (l in 1:k) 
       g <- g + edge(j,friends[l])
