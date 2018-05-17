@@ -71,7 +71,21 @@ similarity.dissasortative <- function(x, y, graph) {
     result <- 0
   else
     # result <- (abs(vertex.degrees[x] - vertex.degrees[y]) / max(vertex.degrees[x], vertex.degrees[y]))
-    result <- abs(vertex.degrees[x] - vertex.degrees[y])
+    result <- (max(vertex.degrees) - (vertex.degrees[x] / vertex.degrees[y]))
+  
+  result
+}
+
+similarity.dissasortative <- function(x, y, graph) {
+  
+  # the function defines the similarity between vertices
+  # as the reciprocal of the distance between degrees
+  
+  if (x == y)
+    result <- 0
+  else
+    # result <- (abs(vertex.degrees[x] - vertex.degrees[y]) / max(vertex.degrees[x], vertex.degrees[y]))
+    result <- (max(vertex.degrees) - (vertex.degrees[x] / vertex.degrees[y]))
   
   result
 }
