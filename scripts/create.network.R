@@ -6,15 +6,15 @@ library(intergraph)
 library(gridExtra)
 library(lsa)
 
-# simple functions which compute the similarity
+# simple functions which compute the distance
 # between each pair of nodes. The main aim of each 
 # function is to establish the neighbourhood of
 # each node
 
-similarity.random <- function(x, y, graph) {
+distance.random <- function(x, y, graph) {
   
   # the first simple example returns a random 
-  # similarity between any pair of nodes
+  # distance between any pair of nodes
   if (x == y)
     result <- 0
   else
@@ -23,9 +23,9 @@ similarity.random <- function(x, y, graph) {
   result
 }
 
-similarity.degree <- function(x, y, graph) {
+distance.degree <- function(x, y, graph) {
   
-  # the function defines the similarity between vertices
+  # the function defines the distance between vertices
   # only by the degree of the target node
   if (x == y)
     result <- 0
@@ -35,12 +35,12 @@ similarity.degree <- function(x, y, graph) {
   result
 }
 
-similarity.attribute <- function(x, y, graph) {
+distance.attribute <- function(x, y, graph) {
   
-  # the function defines the similarity between vertices 
+  # the function defines the distance between vertices 
   # as the distance between values of any vertex attribute
   #
-  # a small constant prevents from infinite similarities
+  # a small constant prevents from infinite distances
   if (x == y)
     result <- 0
   else
@@ -49,10 +49,10 @@ similarity.attribute <- function(x, y, graph) {
   result
 }
 
-similarity.cosine <- function(x, y, graph) {
+distance.cosine <- function(x, y, graph) {
   
-  # the function defines the similarity between vertices
-  # as the cosine similarity between values of a vertex attribute
+  # the function defines the distance between vertices
+  # as the cosine distance between values of a vertex attribute
   # which contains a vector of numbers
   if (x == y)
     result <- 0
@@ -62,31 +62,33 @@ similarity.cosine <- function(x, y, graph) {
   result
 }
 
-similarity.dissasortative <- function(x, y, graph) {
+distance.dissasortative <- function(x, y, graph) {
   
-  # the function defines the similarity between vertices
-  # as the reciprocal of the distance between degrees
+  # the function defines the distance between vertices
+  # as the reciprocal of the distance between their degrees
   
   if (x == y)
     result <- 0
   else
-    # result <- (abs(vertex.degrees[x] - vertex.degrees[y]) / max(vertex.degrees[x], vertex.degrees[y]))
-    result <- (max(vertex.degrees) - (vertex.degrees[x] / vertex.degrees[y]))
+    result <- max(vertex.degrees) - (vertex.degrees[x] / vertex.degrees[y])
   
   result
 }
 
-similarity.dissasortative <- function(x, y, graph) {
+distance.hierarchical <- function(x, y, graph, alpha=0.25) {
   
-  # the function defines the similarity between vertices
-  # as the reciprocal of the distance between degrees
+  # the function defines the distance between vertices
+  # as the reciprocal of the linear combination of their euclidean 
+  # distance in space and the difference of "levels"
+  
+  color.map <- list('steelblue'=1, 'seagreen'=2, 'tomato'=3)
   
   if (x == y)
     result <- 0
-  else
-    # result <- (abs(vertex.degrees[x] - vertex.degrees[y]) / max(vertex.degrees[x], vertex.degrees[y]))
-    result <- (max(vertex.degrees) - (vertex.degrees[x] / vertex.degrees[y]))
-  
+  else {
+    distance <- sqrt((vertex.x[x] - vertex.x[y])^2 + (vertex.y[x] - vertex.y[y])^2)
+    result <- 1 - (alpha * abs(as.numeric(color.map[vertex.class[x]]) - as.numeric(color.map[vertex.class[y]])) + (1 - alpha) * distance)
+  }
   result
 }
 
@@ -117,6 +119,15 @@ vertex.df <- data.frame(vertex.ids, vertex.values)
 # create a random vector for cosine similarity for each vertex
 vertex.vectors <- numeric()
 
+# create a random assignment of vertices to one of two classes
+vertex.class <- rep('steelblue', num.vertices)
+vertex.class[ sample(num.vertices, num.vertices/2) ] <- 'seagreen'
+vertex.class[ sample(num.vertices, num.vertices/4) ] <- 'tomato'
+
+# create random coordinates for each vertex
+vertex.x <- runif(num.vertices)
+vertex.y <- runif(num.vertices)
+
 for (i in vertex.ids)
   vertex.vectors[i] <- list(c(1,sample(x = 0:1, size = 9, replace = TRUE)))
 
@@ -126,14 +137,14 @@ vertex.degrees <- numeric()
 for (i in vertex.ids)
   vertex.degrees[i] <- sample(1:10, 1)
 
-ranking <- function(v, sim, g) {
+ranking <- function(v, dist, g) {
   
-  # apply the similarity() function between vertex v and all other vertices
-  vertex.df$distances <- sapply(vertex.df$vertex.ids, sim, x = v, graph = g)
+  # apply the distance() function between vertex v and all other vertices
+  vertex.df$dst <- sapply(vertex.df$vertex.ids, dist, x = v, graph = g)
   
   neighbours <- vertex.df %>%
-    filter(distances > 0) %>%
-    arrange(distances) %>%
+    filter(dst > 0) %>%
+    arrange(dst) %>%
     top_n(n) %>%
     select(vertex.ids)
   
@@ -160,7 +171,7 @@ bin_ranking <- function(v, sim, b, nb, g) {
   neighbours
 }
 
-generate_rank_graph <- function(similarity, use_bin_ranking = FALSE) {
+generate_rank_graph <- function(distance, use_bin_ranking = FALSE) {
   
   # number of bins when binned ranking is used
   num_bins = 10
@@ -178,7 +189,7 @@ generate_rank_graph <- function(similarity, use_bin_ranking = FALSE) {
         for (n in 1:k) {
             # select the bin from which the target vertices 
             bin <- sample(1:num_bins, 1, prob = probabilities)
-            vertex.neighbours <- bin_ranking(vertex.df[j,1], similarity, bin, num_bins, g)
+            vertex.neighbours <- bin_ranking(vertex.df[j,1], distance, bin, num_bins, g)
             
             if (length(vertex.neighbours) > 0)
               friend <- sample(vertex.neighbours$vertex.ids, 1)
@@ -190,7 +201,7 @@ generate_rank_graph <- function(similarity, use_bin_ranking = FALSE) {
     }
     else {
         # compute the ranking for a given vertex
-        vertex.neighbours <- ranking(vertex.df[j,1], similarity, g)
+        vertex.neighbours <- ranking(vertex.df[j,1], distance, g)
       
         if (use.equal.outdegree == FALSE)
           k <- vertex.degrees[j]
@@ -206,6 +217,9 @@ generate_rank_graph <- function(similarity, use_bin_ranking = FALSE) {
 
   # remove duplicated edges and loops
   g <- simplify(g)
+  g$vertex.class <- vertex.class
+  g$vertex.coords <- cbind(vertex.x, vertex.y)
+  
   g
 } 
 
