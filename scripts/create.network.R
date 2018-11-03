@@ -5,6 +5,7 @@ library(GGally)
 library(intergraph)
 library(gridExtra)
 library(lsa)
+library(sigmoid)
 
 # simple functions which compute the distance
 # between each pair of nodes. The main aim of each 
@@ -112,6 +113,53 @@ distance.simple.process <- function(x, y, graph) {
       result <- abs(vertex.x[x]-vertex.x[y]) + abs(vertex.y[x]-vertex.y[y])
   }
 
+  result
+}
+
+distance.simple.process.with.random <- function(x, y, graph) {
+  
+  # the function defines a simple process
+  # where two vertices create edge if the proximity
+  # between attribute values of these vertices is small
+  # with a small stochastic element
+  alpha = 0.5
+  
+  if (x == y)
+    result <- 0
+  else {
+    if (vertex.z[x] == vertex.z[y])
+      result <- alpha * sqrt((vertex.x[x]-vertex.x[y])**2 + (vertex.y[x]-vertex.y[y])**2)
+    else
+      result <- abs(vertex.x[x]-vertex.x[y]) + abs(vertex.y[x]-vertex.y[y])
+  }
+  
+  result <- result + runif(1, min=-1, max=1) * 0.1  
+  
+  result
+}
+
+distance.simple.process.with.sigmoid <- function(x, y, graph) {
+  
+  # the function defines a simple process
+  # where two vertices create edge if the proximity
+  # between attribute values of these vertices is small
+  # but the final distance goes through non-linearity
+  alpha = 0.5
+  
+  if (x == y)
+    result <- 0
+  else {
+    if (vertex.z[x] == vertex.z[y])
+      result <- alpha * sqrt((vertex.x[x]-vertex.x[y])**2 + (vertex.y[x]-vertex.y[y])**2)
+    else
+      result <- abs(vertex.x[x]-vertex.x[y]) + abs(vertex.y[x]-vertex.y[y])
+  }
+  
+  # transform result to the range [-10, 10]
+  result <- (result/2) * 20 - 10
+  # pass the result through sigmoid
+  result <- 1 - sigmoid(result)
+  
   result
 }
 
