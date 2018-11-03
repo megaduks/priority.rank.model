@@ -173,7 +173,7 @@ num.vertices <- 100
 use.equal.outdegree <- FALSE
 
 # set the number of edges each new vertex creates
-k <- 2
+k <- 4
 
 # create a given number of vertices
 vertex.ids <- 1:num.vertices
