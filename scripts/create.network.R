@@ -101,7 +101,7 @@ distance.simple.process <- function(x, y, graph) {
   # the function defines a simple deterministic process
   # where two vertices create edge if the proximity
   # between attribute values of these vertices is small
-  alpha = 0.1
+  alpha = 0.5
   
   if (x == y)
     result <- 0
@@ -201,6 +201,35 @@ bin_ranking <- function(v, sim, b, nb, g) {
   neighbours
 }
 
+generate_graph <- function(distance) {
+  
+  # create an empty directed graph with a given number of vertices
+  g <- make_empty_graph(n = num.vertices, directed = TRUE)
+  
+  # loop over all vertices in the graph
+  for (j in vertex.df$vertex.ids) {
+    
+    # compute the ranking for a given vertex
+    vertex.neighbours <- ranking(vertex.df[j,1], distance, g)
+    
+    # select a neighbouring vertex using model probabilities
+    friends <- vertex.neighbours[1:k]
+  
+    # add edges to selected vertices
+    for (l in 1:k)
+      g <- g + edge(j,friends[l])
+  }
+    
+  # remove duplicated edges and loops
+  g <- simplify(g)
+  g$vertex.class <- vertex.class
+  g$vertex.coords <- cbind(vertex.x, vertex.y)
+  
+  g
+} 
+
+  
+  
 generate_rank_graph <- function(distance, use_bin_ranking = FALSE) {
   
   # number of bins when binned ranking is used
