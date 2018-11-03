@@ -35,7 +35,7 @@ distance.degree <- function(x, y, graph) {
   result
 }
 
-distance.attribute <- function(x, y, graph) {
+distance.attribute <- function(x, y, graph, edge.prob=0.05) {
   
   # the function defines the distance between vertices 
   # as the distance between values of any vertex attribute
@@ -45,11 +45,15 @@ distance.attribute <- function(x, y, graph) {
     result <- 0
   else
     result <- 1 / (abs(vertex.df[x,2] - vertex.df[y,2]) + 0.001)
+    # result <- 1 / sqrt((vertex.x[x] - vertex.x[y])^2 + (vertex.y[x] - vertex.y[y])^2)
+  
+  if (runif(1) < edge.prob)
+    result <- 0
   
   result
 }
 
-distance.cosine <- function(x, y, graph) {
+distance.cosine <- function(x, y, graph, edge.prob=0.5) {
   
   # the function defines the distance between vertices
   # as the cosine distance between values of a vertex attribute
@@ -58,7 +62,7 @@ distance.cosine <- function(x, y, graph) {
     result <- 0
   else
     result <- cosine(vertex.vectors[[x]], vertex.vectors[[y]])
-  
+    
   result
 }
 
@@ -89,6 +93,25 @@ distance.hierarchical <- function(x, y, graph, alpha=0.25) {
     distance <- sqrt((vertex.x[x] - vertex.x[y])^2 + (vertex.y[x] - vertex.y[y])^2)
     result <- 1 - (alpha * abs(as.numeric(color.map[vertex.class[x]]) - as.numeric(color.map[vertex.class[y]])) + (1 - alpha) * distance)
   }
+  result
+}
+
+distance.simple.process <- function(x, y, graph) {
+  
+  # the function defines a simple deterministic process
+  # where two vertices create edge if the proximity
+  # between attribute values of these vertices is small
+  alpha = 0.1
+  
+  if (x == y)
+    result <- 0
+  else {
+    if (vertex.z[x] == vertex.z[y])
+      result <- alpha * sqrt((vertex.x[x]-vertex.x[y])**2 + (vertex.y[x]-vertex.y[y])**2)
+    else
+      result <- abs(vertex.x[x]-vertex.x[y]) + abs(vertex.y[x]-vertex.y[y])
+  }
+
   result
 }
 
@@ -127,6 +150,13 @@ vertex.class[ sample(num.vertices, num.vertices/4) ] <- 'tomato'
 # create random coordinates for each vertex
 vertex.x <- runif(num.vertices)
 vertex.y <- runif(num.vertices)
+
+# create random categorical attribute with small number of values
+vertex.z <- sample(c('A','B'), size = num.vertices, replace = TRUE)
+
+layout.geom <- function(){
+  cbind(vertex.x, vertex.y)
+}
 
 for (i in vertex.ids)
   vertex.vectors[i] <- list(c(1,sample(x = 0:1, size = 9, replace = TRUE)))
@@ -203,16 +233,17 @@ generate_rank_graph <- function(distance, use_bin_ranking = FALSE) {
         # compute the ranking for a given vertex
         vertex.neighbours <- ranking(vertex.df[j,1], distance, g)
       
-        if (use.equal.outdegree == FALSE)
-          k <- vertex.degrees[j]
+#        if (use.equal.outdegree == FALSE)
+#          k <- vertex.degrees[j]
         
         # select a neighbouring vertex using model probabilities
         friends <- sample(vertex.neighbours, k, replace = FALSE, prob = probabilities)
     }
     
     # add edges to selected vertices
-    for (l in 1:k) 
+    for (l in 1:k)
       g <- g + edge(j,friends[l])
+    
   }
 
   # remove duplicated edges and loops

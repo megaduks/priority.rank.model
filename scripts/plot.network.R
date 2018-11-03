@@ -2,6 +2,27 @@
 
 source('scripts/create.network.R')
 
+# Simple process network
+#
+distance <- distance.simple.process
+layout.geom <- cbind(vertex.x, vertex.y)
+g <- generate_rank_graph(distance, use_bin_ranking = FALSE)
+title <- "Simple process network network"
+
+# draw the graph
+p0.net <- ggnet2(g, size = 'degree', color = vertex.z, edge.size = 0.5, edge.color = 'grey50', mode = g$vertex.coords, palette = 'Set1')
+
+# compute the degree distribution in the graph
+d <- as.data.frame(table(igraph::degree(g)))
+names(d) <- c("degree", "count")
+#d$degree <- as.numeric(d$degree)
+
+# draw the histogram of the degree distribution
+p0.dd <- ggplot(data = d, aes(x=degree,y=count)) + geom_bar(stat = "identity", aes(alpha = 0.1)) + geom_smooth(stat = 'identity')
+
+p <- grid.arrange(p0.net, p0.dd, ncol=2, top=title)
+ggsave(filename = 'figures/simple-process.png', plot = p)
+
 # Erdos-Renyi random network
 #
 distance <- distance.random
@@ -30,7 +51,7 @@ g <- generate_rank_graph(distance, use_bin_ranking = FALSE)
 title <- "Small world network"
 
 # draw the graph
-p2.net <- ggnet2(g, size = 'degree', color = 'firebrick', edge.size = 0.5, edge.color = 'grey50', mode = 'kamadakawai') 
+p2.net <- ggnet2(g, size = 'degree', color = 'firebrick', edge.size = 0.5, edge.color = 'grey50', mode = 'fruchtermanreingold') 
 
 # compute the degree distribution in the graph
 d <- as.data.frame(table(igraph::degree(g)))
