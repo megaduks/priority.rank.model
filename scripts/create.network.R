@@ -105,7 +105,7 @@ distance.simple.process <- function(x, y, graph) {
   alpha = 0.5
   
   if (x == y)
-    result <- 0
+    result <- 0.001
   else {
     if (vertex.z[x] == vertex.z[y])
       result <- alpha * sqrt((vertex.x[x]-vertex.x[y])**2 + (vertex.y[x]-vertex.y[y])**2)
@@ -113,7 +113,7 @@ distance.simple.process <- function(x, y, graph) {
       result <- abs(vertex.x[x]-vertex.x[y]) + abs(vertex.y[x]-vertex.y[y])
   }
 
-  result
+  1/result
 }
 
 distance.simple.process.with.random <- function(x, y, graph) {
@@ -125,7 +125,7 @@ distance.simple.process.with.random <- function(x, y, graph) {
   alpha = 0.5
   
   if (x == y)
-    result <- 0
+    result <- 0.001
   else {
     if (vertex.z[x] == vertex.z[y])
       result <- alpha * sqrt((vertex.x[x]-vertex.x[y])**2 + (vertex.y[x]-vertex.y[y])**2)
@@ -135,7 +135,7 @@ distance.simple.process.with.random <- function(x, y, graph) {
   
   result <- result + runif(1, min=-1, max=1) * 0.1  
   
-  result
+  1/result
 }
 
 distance.simple.process.with.sigmoid <- function(x, y, graph) {
@@ -147,7 +147,7 @@ distance.simple.process.with.sigmoid <- function(x, y, graph) {
   alpha = 0.5
   
   if (x == y)
-    result <- 0
+    result <- 0.001
   else {
     if (vertex.z[x] == vertex.z[y])
       result <- alpha * sqrt((vertex.x[x]-vertex.x[y])**2 + (vertex.y[x]-vertex.y[y])**2)
