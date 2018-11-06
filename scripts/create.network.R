@@ -163,6 +163,23 @@ distance.simple.process.with.sigmoid <- function(x, y, graph) {
   result
 }
 
+distance.no.simple.process <- function(x, y, graph) {
+  
+  # the function defines a contradiction of a simple process
+  # where two vertices create edge stochastically
+  
+  if (x == y)
+    result <- 0.001
+  else {
+    if (runif(1) < 0.5)
+      result <- sqrt((vertex.x[x]-vertex.x[y])**2 + (vertex.y[x]-vertex.y[y])**2)
+    else
+      result <- abs(vertex.x[x]-vertex.x[y]) + abs(vertex.y[x]-vertex.y[y])
+  }
+
+  1/(runif(1) * result)
+}
+
 # define the length of the ranking
 n <- 10
 
