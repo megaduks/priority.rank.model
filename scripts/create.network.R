@@ -177,7 +177,11 @@ distance.no.simple.process <- function(x, y, graph) {
       result <- abs(vertex.x[x]-vertex.x[y]) + abs(vertex.y[x]-vertex.y[y])
   }
 
+<<<<<<< HEAD
 1/(runif(1, min = -0.9, max = 0.9) * result + result)
+=======
+1/(runif(1, min = -1, max = 1) * result)
+>>>>>>> a11415e87ddce29fc7ad45322618b0f21368084e
 }
 
 # define the length of the ranking
